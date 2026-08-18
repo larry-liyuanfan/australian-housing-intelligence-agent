@@ -1,0 +1,86 @@
+name: housing_agent_sg
+
+services:
+  housing-agent:
+    build: .
+    restart: unless-stopped
+    environment:
+      HOUSING_BACKEND: ${HOUSING_BACKEND:-elasticsearch}
+      HOUSING_CACHE: ${HOUSING_CACHE:-redis}
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      REDIS_URL: redis://redis:6379/0
+      MODEL_STUDIO_BASE_URL: ${MODEL_STUDIO_BASE_URL:-}
+      MODEL_STUDIO_API_KEY: ${MODEL_STUDIO_API_KEY:-}
+      MODEL_STUDIO_CHAT_MODEL: ${MODEL_STUDIO_CHAT_MODEL:-qwen-plus}
+      MODEL_STUDIO_EMBEDDING_MODEL: ${MODEL_STUDIO_EMBEDDING_MODEL:-text-embedding-v4}
+      MODEL_STUDIO_RERANK_MODEL: ${MODEL_STUDIO_RERANK_MODEL:-qwen3-rerank}
+    ports:
+      - "127.0.0.1:${HOUSING_API_PORT:-8090}:8080"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    cpus: 1.0
+    mem_limit: 768m
+    pids_limit: 256
+    security_opt:
+      - no-new-privileges:true
+    networks: [housing_agent_net]
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.4
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: -Xms768m -Xmx768m
+    volumes:
+      - housing_agent_es_data:/usr/share/elasticsearch/data
+    cpus: 1.25
+    mem_limit: 1536m
+    pids_limit: 512
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+    networks: [housing_agent_net]
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+    cpus: 0.25
+    mem_limit: 256m
+    pids_limit: 128
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [housing_agent_net]
+
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    restart: unless-stopped
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=3d"]
+    volumes:
+      - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - housing_agent_prom_data:/prometheus
+    ports:
+      - "127.0.0.1:${HOUSING_PROM_PORT:-9091}:9090"
+    cpus: 0.25
+    mem_limit: 256m
+    pids_limit: 128
+    networks: [housing_agent_net]
+
+networks:
+  housing_agent_net:
+    name: housing_agent_net
+
+volumes:
+  housing_agent_es_data:
+    name: housing_agent_es_data
+  housing_agent_prom_data:
+    name: housing_agent_prom_data

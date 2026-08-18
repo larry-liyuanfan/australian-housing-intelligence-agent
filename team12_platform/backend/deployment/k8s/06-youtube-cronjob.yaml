@@ -1,0 +1,62 @@
+# COMP90024 Team 12
+# Public attribution: COMP90024 Team 12; member identities removed from this portfolio copy.
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: youtube-harvest
+  namespace: comp90024
+spec:
+  schedule: "0 */6 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: harvester
+              image: fission/python-env-3.9
+              command: ["python3", "-u", "/code/harvest_youtube_v3.py"]
+              volumeMounts:
+                - name: code
+                  mountPath: /code
+                - name: data
+                  mountPath: /data
+          volumes:
+            - name: code
+              configMap:
+                name: youtube-harvest-code
+            - name: data
+              persistentVolumeClaim:
+                claimName: youtube-pvc
+          restartPolicy: Never
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: youtube-ingest
+  namespace: comp90024
+spec:
+  schedule: "30 */6 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: ingester
+              image: fission/python-env-3.9
+              command: ["python3", "-u", "/code/ingest_youtube_master.py"]
+              volumeMounts:
+                - name: code
+                  mountPath: /code
+                - name: data
+                  mountPath: /data
+          volumes:
+            - name: code
+              configMap:
+                name: youtube-ingest-code
+            - name: data
+              persistentVolumeClaim:
+                claimName: youtube-pvc
+          restartPolicy: Never

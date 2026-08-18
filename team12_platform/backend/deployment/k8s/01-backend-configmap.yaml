@@ -1,0 +1,16 @@
+# COMP90024 Team 12
+# Public attribution: COMP90024 Team 12; member identities removed from this portfolio copy.
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: housing-backend-config
+  namespace: comp90024
+data:
+  ES_HOST: "https://elasticsearch-es-http.elastic.svc.cluster.local:9200"
+  ES_USERNAME: "elastic"
+  ES_VERIFY_CERTS: "0"
+  ES_INDEX: "housing_posts"
+  OFFICIAL_ES_INDEX: "official_housing_rows"
+  PORT: "9090"
+  FLASK_DEBUG: "false"

@@ -1,0 +1,59 @@
+{
+  "scope": "synthetic/deidentified contract evaluation; not real-corpus answer quality",
+  "data_version": "deidentified-fixtures-v1",
+  "task_distribution": {
+    "direct_retrieval": 30,
+    "multi_hop": 25,
+    "normalization": 15,
+    "clarification": 15,
+    "failure_recovery": 15
+  },
+  "metric_definitions": {
+    "task_success": "expected status and all expected tool names observed",
+    "tool_execution_success": "per logical tool, at least one attempt succeeded after bounded recovery",
+    "tool_attempt_success": "successful physical attempts divided by all physical attempts",
+    "citation_completeness": "completed responses containing at least one citation",
+    "failure_recovery": "injected-failure tasks with a successful call marked recovered"
+  },
+  "variants": {
+    "direct_no_tools": {
+      "task_count": 100,
+      "task_success": 0.15,
+      "argument_validity": 1.0,
+      "tool_execution_success": null,
+      "tool_attempt_success": null,
+      "citation_completeness": 0.0,
+      "failure_recovery": 0.0,
+      "average_tool_calls": 0.0,
+      "p50_latency_ms": 0.01,
+      "p95_latency_ms": 0.01,
+      "provider_cost_usd": 0.0
+    },
+    "single_tool": {
+      "task_count": 100,
+      "task_success": 0.4,
+      "argument_validity": 1.0,
+      "tool_execution_success": 0.8823529411764706,
+      "tool_attempt_success": 0.8823529411764706,
+      "citation_completeness": 1.0,
+      "failure_recovery": 0.0,
+      "average_tool_calls": 0.85,
+      "p50_latency_ms": 0.5529000191017985,
+      "p95_latency_ms": 2.095900010317564,
+      "provider_cost_usd": 0.0
+    },
+    "state_machine": {
+      "task_count": 100,
+      "task_success": 1.0,
+      "argument_validity": 1.0,
+      "tool_execution_success": 1.0,
+      "tool_attempt_success": 0.9397590361445783,
+      "citation_completeness": 1.0,
+      "failure_recovery": 1.0,
+      "average_tool_calls": 1.66,
+      "p50_latency_ms": 0.8010999881662428,
+      "p95_latency_ms": 1.4739999896846712,
+      "provider_cost_usd": 0.0
+    }
+  }
+}

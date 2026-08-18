@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <!-- Main frontend libraries -->
+  <!-- Chart.js used for dashboard visualisations -->
+  <title>Housing Insecurity Analytics Dashboard</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.min.js"></script>
+  <script src="./config.js"></script>
+
+  <style>
+    /* Initial dashboard UI styles */
+   /* colours kept simple for readability */
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4efe7;
+      color: #17211f;
+      display: flex;
+    }
+
+    /* left navigation panel */
+    .sidebar {
+      width: 270px;
+      height: 100vh;
+      position: fixed;
+      background: #e7ded0;
+      padding: 24px;
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+
+    .sidebar h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .sidebar p {
+      color: #52605b;
+      font-size: 14px;
+    }
+
+    .nav {
+      margin-top: 32px;
+    }
+
+    .nav a {
+      display: block;
+      text-decoration: none;
+      color: #17211f;
+      background: #fffaf2;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 14px;
+      font-weight: bold;
+      border: 1px solid #ddd0bf;
+      transition: 0.25s;
+    }
+
+    .nav a:hover {
+      background: #dff2eb;
+      color: #087a6a;
+    }
+
+    .main {
+      margin-left: 300px;
+      padding: 36px 48px;
+      width: calc(100% - 300px);
+      box-sizing: border-box;
+    }
+
+    .hero {
+  font-size: 26px;
+  line-height: 1.25;
+  font-weight: 700;
+  max-width: 900px;
+  margin-bottom: 18px;
+}
+
+
+    .card {
+  display: none;
+  background: #fffaf4;
+  border: 1px solid #ddd0bf;
+  border-radius: 18px;
+  padding: 18px;
+  height: calc(100vh - 70px);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-bottom: 26px;
+    }
+
+    .stat {
+      background: #fffaf4;
+      border: 1px solid #ddd0bf;
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+    }
+
+    .stat h2 {
+      margin: 0;
+      color: #087a6a;
+      font-size: 34px;
+    }
+
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .step {
+      background: #f8f3ea;
+      border: 1px solid #ddd0bf;
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .step h3 {
+      margin-top: 0;
+      color: #087a6a;
+      font-size: 17px;
+    }
+
+    .note {
+      background: #eaf6f1;
+      border-left: 5px solid #087a6a;
+      padding: 14px 16px;
+      border-radius: 10px;
+      margin-top: 18px;
+    }
+
+
+/* make Chart.js canvas height stable */
+.chart-box {
+  background: white;
+  border: 1px solid #ddd0bf;
+  border-radius: 14px;
+  padding: 12px;
+  margin-top: 10px;
+  height: 260px;
+  box-sizing: border-box;
+  position: relative;
+}
+
+/* stable word cloud canvas size */
+.word-cloud-box {
+  height: 560px;
+}
+
+#wordCloudCanvas {
+  width: 100%;
+  height: 520px;
+}
+
+
+    code {
+      background: #efe7db;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+
+    h1, h2 {
+      margin-top: 0;
+    }
+
+   p, li {
+  line-height: 1.35;
+  font-size: 13px;
+}
+  </style>
+</head>
+
+
+<!-- Sidebar navigation -->
+<body>
+
+  <aside class="sidebar">
+    <h2>Team 12 Rental Signals</h2>
+    <p>Multi-source analytics frontend</p>
+
+<div class="nav">
+  <a href="javascript:void(0)" onclick="showSection('pipeline')">A · System Pipeline</a>
+  <a href="javascript:void(0)" onclick="showSection('platform_volume')">B · Cross-platform Discussion Volume</a>
+  <a href="javascript:void(0)" onclick="showSection('sentiment')">C · Overall Sentiment Distribution</a>
+  <a href="javascript:void(0)" onclick="showSection('platform_sentiment')">D · Platform Sentiment Comparison</a>
+  <a href="javascript:void(0)" onclick="showSection('sentiment_time')">E · Sentiment Trend Over Time</a>
+  <a href="javascript:void(0)" onclick="showSection('keywords')">F · Keyword Distribution</a>
+  <a href="javascript:void(0)" onclick="showSection('city_map')">G · Regional Discussion Map</a>
+  <a href="javascript:void(0)" onclick="showSection('official_overview')">H · Official Housing Overview</a>
+  <!-- add word cloud navigation entry -->
+  <a href="javascript:void(0)" onclick="showSection('word_cloud')">I · Word Cloud</a>
+  <a href="javascript:void(0)" onclick="showSection('conclusion')">J · Conclusion</a>
+</div>
+
+    <p style="margin-top:40px;">
+      Frontend page calls backend APIs and renders JSON outputs into dashboard sections.
+    </p>
+  </aside>
+
+<!-- Main dashboard content -->
+  <main class="main">
+
+    <div class="hero">
+      Rental stress signals from online discussion, official indicators, and cloud analytics.
+    </div>
+<!-- System overview section -->
+    <section id="pipeline" class="card" style="display:block;">
+      <h1>System Overview / Data Pipeline</h1>
+      <p>
+        This project presents a cloud-style analytics pipeline for understanding Australian housing insecurity.
+        Online discussion data is processed with NLP methods and compared with official rental indicators.
+      </p>
+
+      <div class="pipeline">
+        <div class="step"><h3>Sources</h3><p>YouTube, GDELT/news, official rent indicators.</p></div>
+        <div class="step"><h3>Harvesting</h3><p>Collected and normalised source records.</p></div>
+        <div class="step"><h3>Processing</h3><p>Keyword, sentiment, topic modelling.</p></div>
+        <div class="step"><h3>Storage</h3><p>ElasticSearch-style indexed records.</p></div>
+        <div class="step"><h3>Analysis</h3><p>Trends, platforms, official comparison.</p></div>
+        <div class="step"><h3>Frontend</h3><p>Interactive dashboard frontend.</p></div>
+      </div>
+    </section>
+
+<!-- System overview section -->
+    <section id="platform_volume" class="card">
+      <h1>Cross-platform Discussion Volume</h1>
+      <p>Compares housing-related discussion volume across public discourse platforms.</p>
+      <div class="chart-box"><canvas id="platformVolumeChart"></canvas></div>
+      <div class="note"><strong>API:</strong> <code>/api/housing/volume-by-platform</code></div>
+    </section>
+
+<!-- Sentiment section -->
+    <section id="sentiment" class="card">
+      <h1>Overall Sentiment Distribution</h1>
+      <p>Shows the overall sentiment distribution of housing-related discussion.</p>
+      <div class="chart-box"><canvas id="sentimentSummaryChart"></canvas></div>
+      <div class="note"><strong>API:</strong> <code>/api/analysis/housing/sentiment-summary</code></div>
+    </section>
+
+<!-- platform_sentiment section -->
+    <section id="platform_sentiment" class="card">
+      <h1>Platform Sentiment Comparison</h1>
+      <p>Compares sentiment patterns across different public discussion platforms.</p>
+      <div class="chart-box"><canvas id="sentimentPlatformChart"></canvas></div>
+      <div class="note"><strong>API:</strong> <code>/api/analysis/housing/sentiment-by-platform</code></div>
+    </section>
+
+<!-- Sentiment Trend section -->
+    <section id="sentiment_time" class="card">
+      <h1>Sentiment Trend Over Time</h1>
+      <p>Tracks how housing-related sentiment changes over time.</p>
+      <div class="chart-box"><canvas id="sentimentTimeChart"></canvas></div>
+      <div class="note"><strong>API:</strong> <code>/api/analysis/housing/sentiment-over-time?interval=month</code></div>
+    </section>
+
+<!-- Keyword Distribution section -->
+    <section id="keywords" class="card">
+      <h1>Keyword Distribution</h1>
+      <p>Shows the most frequent housing-related keywords and topics.</p>
+      <div class="chart-box"><canvas id="keywordChart"></canvas></div>
+      <div class="note"><strong>API:</strong> <code>/api/analysis/housing/top-query-keywords</code></div>
+    </section>
+
+<!-- Regional Discussion section -->
+    <section id="city_map" class="card">
+      <h1>Regional Discussion Distribution</h1>
+      <p>Visualises cleaned regional housing discussion distribution. City-level and state-level mentions are shown separately to avoid mixing geographic levels.</p>
+
+      <!-- split regional output into city-level chart -->
+      <div class="chart-box">
+        <canvas id="cityChart"></canvas>
+      </div>
+
+      <!-- split regional output into state-level chart -->
+      <div class="chart-box">
+        <canvas id="stateChart"></canvas>
+      </div>
+
+      <div class="note">
+        <strong>API:</strong> <code>/api/analysis/housing/by-region-cleaned?source_size=2000&amp;output_size=100</code><br>
+        <strong>Interpretation:</strong> Counts represent regional mentions in public discourse, not housing severity.
+      </div>
+    </section>
+
+<!-- Official Housing Overview section -->
+    <section id="official_overview" class="card">
+      <h1>Official Housing Overview</h1>
+      <p>Summarises official housing evidence source coverage.</p>
+      <div class="chart-box"><canvas id="officialChart"></canvas></div>
+      <div class="note">
+        <strong>API:</strong> <code>/api/official/overview</code><br>
+        <strong>Interpretation:</strong> This chart uses a log scale because official source row counts vary greatly. It shows data coverage, not housing severity.
+      </div>
+    </section>
+
+
+<!-- add word cloud frontend section -->
+<section id="word_cloud" class="card">
+  <h1>Housing Word Cloud</h1>
+  <p>Shows the most frequent meaningful words extracted from recent housing-related public discourse records. Generic English stopwords, conversational filler, and unrelated news entities are removed on the frontend so the cloud surfaces substantive topics rather than function words.</p>
+  <div class="chart-box word-cloud-box">
+    <canvas id="wordCloudCanvas"></canvas>
+  </div>
+  <div class="note"><strong>API:</strong> <code>/api/analysis/housing/word-cloud</code></div>
+</section>
+
+    <section id="conclusion" class="card">
+      <h1>Conclusion and Limitations</h1>
+
+      <p>
+        The dashboard demonstrates how backend APIs can connect online discussion data,
+        NLP analysis, and official rental indicators into one frontend presentation.
+      </p>
+
+      <ul>
+        <li>API outputs depend on backend and ElasticSearch availability.</li>
+        <li>Sentiment analysis is used as a baseline NLP method.</li>
+        <li>Official housing data provides real-world context for online discussion trends.</li>
+      </ul>
+    </section>
+
+  </main>
+
+  <script>
+    // API base is loaded dynamically for local and cloud deployment.
+    // Priority:
+    // 1. frontend/config.js: window.APP_CONFIG.API_BASE
+    // 2. local fallback: http://localhost:9093
+    // 3. cloud same-origin fallback: current frontend origin
+    const API_BASE = (() => {
+      const fromConfig = window.APP_CONFIG && window.APP_CONFIG.API_BASE;
+
+      if (typeof fromConfig === "string" && fromConfig.trim() !== "") {
+        return fromConfig.trim().replace(/\/$/, "");
+      }
+
+      const hostname = window.location.hostname;
+
+      if (hostname === "localhost" || hostname === "127.0.0.1") {
+        return "http://localhost:8080";
+      }
+
+      return window.location.origin.replace(/\/$/, "");
+    })();
+    const charts = {};
+
+    function showSection(sectionId) {
+      const sections = document.querySelectorAll(".card");
+
+      sections.forEach(section => {
+        section.style.display = "none";
+      });
+
+      document.getElementById(sectionId).style.display = "block";
+
+      if (sectionId === "platform_volume") loadPlatformVolume();
+      if (sectionId === "sentiment") loadSentimentSummary();
+      if (sectionId === "platform_sentiment") loadSentimentByPlatform();
+      if (sectionId === "sentiment_time") loadSentimentTime();
+      if (sectionId === "keywords") loadKeywords();
+      if (sectionId === "city_map") loadCityDistribution();
+      if (sectionId === "official_overview") loadOfficialOverview();
+      // load word cloud section
+      if (sectionId === "word_cloud") loadWordCloud();
+
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // build API URL safely for both absolute API_BASE and same-origin deployment.
+    function buildApiUrl(endpoint) {
+      const cleanEndpoint = endpoint.startsWith("/") ? endpoint : "/" + endpoint;
+
+      if (!API_BASE) {
+        return cleanEndpoint;
+      }
+
+      return API_BASE + cleanEndpoint;
+    }
+
+    async function fetchAPI(endpoint) {
+      const url = buildApiUrl(endpoint);
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error("API request failed: " + url);
+      }
+
+      return await response.json();
+    }
+
+    function getBuckets(data) {
+      if (Array.isArray(data)) return data;
+      if (Array.isArray(data.buckets)) return data.buckets;
+      if (Array.isArray(data.results)) return data.results;
+      if (Array.isArray(data.data)) return data.data;
+      if (Array.isArray(data.items)) return data.items;
+      return [];
+    }
+
+    // format backend field values into readable labels for charts
+    function formatLabel(value) {
+      if (value === null || value === undefined || value === "") return "Unknown";
+
+      const labelMap = {
+        "nsw_rental_bond": "NSW rental bond",
+        "abs_2021_census_datapacks": "ABS 2021 census datapacks",
+        "wa_rental_bonds": "WA rental bonds",
+        "sa_private_rent_report": "SA private rent report",
+        "tas_rental_bond": "TAS rental bond",
+        "vic_rental_report_data_tables": "VIC rental report tables",
+        "qld_median_rents": "QLD median rents",
+        "aihw_shsc_monthly": "AIHW SHSC monthly",
+        "vic_median_rents_lga": "VIC median rents by LGA",
+        "vic_affordable_lettings_lga": "VIC affordable lettings by LGA",
+        "sa_housing_stress": "SA housing stress",
+        "vic_residential_tenancies": "VIC residential tenancies"
+      };
+
+      const text = String(value);
+
+      if (labelMap[text]) return labelMap[text];
+
+      return text
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, letter => letter.toUpperCase());
+    }
+
+    // support backend-specific label fields such as sentiment_label, query_keyword and region_label
+    function getLabel(item) {
+      const raw = item.key ||
+            item.label ||
+            item.name ||
+            item.platform ||
+            item.source_group ||
+            item.region_label ||
+            item.region ||
+            item.region_city ||
+            item.city ||
+            item.state ||
+            item.query_keyword ||
+            item.keyword ||
+            item.subtopic ||
+            item.sentiment_label ||
+            item.sentiment ||
+            item.row_type ||
+            item.period ||
+            item.date ||
+            item.month ||
+            item.year ||
+            "Unknown";
+
+      return formatLabel(raw);
+    }
+
+    // support post_count from /api/housing/volume-by-platform
+    function getValue(item) {
+      return item.post_count ??
+            item.doc_count ??
+            item.count ??
+            item.value ??
+            item.frequency ??
+            item.total ??
+            item.volume ??
+            item.n ??
+            0;
+    }
+
+    // format large values for readable chart ticks, including log scale charts
+    function formatNumber(value) {
+      const number = Number(value);
+
+      if (!Number.isFinite(number)) return value;
+
+      return number.toLocaleString();
+    }
+
+    // aggregate cleaned regional records to state level so states and cities are not mixed in one chart
+    function aggregateRegionsByState(buckets) {
+      const stateTotals = {};
+
+      buckets.forEach(item => {
+        const state = item.region_state;
+
+        if (!state || state === "AUS" || state === "unknown") return;
+
+        stateTotals[state] = (stateTotals[state] || 0) + getValue(item);
+      });
+
+      return Object.entries(stateTotals)
+        .map(([state, count]) => ({
+          state,
+          count
+        }))
+        .sort((a, b) => b.count - a.count);
+    }
+
+    // allow each chart to pass custom axis options and avoid zero-height canvas issues
+    function renderChart(canvasId, type, title, labels, values, datasetLabel, customOptions = {}) {
+      const canvas = document.getElementById(canvasId);
+
+      if (!canvas) {
+        console.error("Missing canvas:", canvasId);
+        return;
+      }
+
+      const ctx = canvas.getContext("2d");
+
+      if (charts[canvasId]) {
+        charts[canvasId].destroy();
+      }
+
+      charts[canvasId] = new Chart(ctx, {
+        type: type,
+        data: {
+          labels: labels,
+          datasets: [{
+            label: datasetLabel,
+            data: values
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          indexAxis: customOptions.indexAxis || "x",
+          plugins: {
+            title: {
+              display: true,
+              text: title
+            },
+            legend: {
+              display: true
+            }
+          },
+          scales: customOptions.scales || {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+
+    function showError(canvasId, message) {
+      const box = document.getElementById(canvasId).parentElement;
+      box.innerHTML = `
+        <div class="note">
+          <strong>Unable to load API data.</strong><br>
+          ${message}<br><br>
+          Please confirm backend is running at <code>${API_BASE}</code>.
+        </div>
+      `;
+    }
+
+    async function loadPlatformVolume() {
+      const endpoint = "/api/housing/volume-by-platform";
+
+      try {
+        const data = await fetchAPI(endpoint);
+        const buckets = getBuckets(data);
+        const labels = buckets.map(getLabel);
+        const values = buckets.map(getValue);
+
+        renderChart(
+          "platformVolumeChart",
+          "bar",
+          "Cross-platform Discussion Volume",
+          labels,
+          values,
+          "Discussion volume"
+        );
+      } catch (error) {
+        showError("platformVolumeChart", error.message);
+      }
+    }
+
+    async function loadSentimentSummary() {
+      const endpoint = "/api/analysis/housing/sentiment-summary";
+
+      try {
+        const data = await fetchAPI(endpoint);
+        const buckets = getBuckets(data);
+        const labels = buckets.map(getLabel);
+        const values = buckets.map(getValue);
+
+        renderChart(
+          "sentimentSummaryChart",
+          "bar",
+          "Overall Sentiment Distribution",
+          labels,
+          values,
+          "Records"
+        );
+      } catch (error) {
+        showError("sentimentSummaryChart", error.message);
+      }
+    }
+
+    // render average sentiment by platform instead of record count
+    async function loadSentimentByPlatform() {
+      const endpoint = "/api/analysis/housing/sentiment-by-platform";
+
+      try {
+        const data = await fetchAPI(endpoint);
+        const buckets = getBuckets(data);
+
+        const labels = buckets.map(getLabel);
+        const values = buckets.map(item => Number(item.average_sentiment ?? 0));
+
+        renderChart(
+          "sentimentPlatformChart",
+          "bar",
+          "Average Sentiment by Platform",
+          labels,
+          values,
+          "Average sentiment",
+          {
+            scales: {
+              y: {
+                beginAtZero: true,
+                min: 0,
+                suggestedMax: 0.12,
+                ticks: {
+                  stepSize: 0.02
+                }
+              }
+            }
+          }
+        );
+      } catch (error) {
+        showError("sentimentPlatformChart", error.message);
+      }
+    }
+
+    // render average sentiment trend with 0.01 y-axis interval and recent periods only
+    async function loadSentimentTime() {
+      const endpoint = "/api/analysis/housing/sentiment-over-time?interval=month";
+
+      try {
+        const data = await fetchAPI(endpoint);
+        let buckets = getBuckets(data);
+
+        buckets = buckets.filter(item => {
+          const period = item.period || "";
+          return period >= "2021-01";
+        });
+
+        const labels = buckets.map(item => {
+          const raw = item.period || "";
+          return raw.slice(0, 7);
+        });
+
+        const values = buckets.map(item => Number(item.average_sentiment ?? 0));
+
+        renderChart(
+          "sentimentTimeChart",
+          "line",
+          "Average Sentiment Over Time",
+          labels,
+          values,
+          "Average sentiment",
+          {
+            scales: {
+              y: {
+                beginAtZero: false,
+                suggestedMin: 0,
+                suggestedMax: 0.10,
+                ticks: {
+                  stepSize: 0.01
+                }
+              }
+            }
+          }
+        );
+      } catch (error) {
+        showError("sentimentTimeChart", error.message);
+      }
+    }
+
+    // filter Unknown keywords and keep vertical chart direction
+    async function loadKeywords() {
+      const endpoint = "/api/analysis/housing/top-query-keywords";
+
+      try {
+        const data = await fetchAPI(endpoint);
+        let buckets = getBuckets(data);
+
+        buckets = buckets
+          .filter(item => getLabel(item) !== "Unknown")
+          .slice(0, 15);
+
+        const labels = buckets.map(getLabel);
+        const values = buckets.map(getValue);
+
+        renderChart(
+          "keywordChart",
+          "bar",
+          "Housing Keyword Distribution",
+          labels,
+          values,
+          "Keyword frequency",
+          {
+            indexAxis: "x",
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+          }
+        );
+      } catch (error) {
+        showError("keywordChart", error.message);
+      }
+    }
+
+    // split regional analysis into city-level and state-level charts
+    async function loadCityDistribution() {
+      const endpoint = "/api/analysis/housing/by-region-cleaned?source_size=2000&output_size=100";
+
+      try {
+        const data = await fetchAPI(endpoint);
+        const buckets = getBuckets(data);
+
+        const cityBuckets = buckets
+          .filter(item => item.region_type === "city")
+          .slice(0, 15);
+
+        const cityLabels = cityBuckets.map(getLabel);
+        const cityValues = cityBuckets.map(getValue);
+
+        renderChart(
+          "cityChart",
+          "bar",
+          "Top Mentioned Cities in Housing Discourse",
+          cityLabels,
+          cityValues,
+          "City mentions",
+          {
+            indexAxis: "x",
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: formatNumber
+                }
+              }
+            }
+          }
+        );
+
+        const stateBuckets = aggregateRegionsByState(buckets).slice(0, 8);
+        const stateLabels = stateBuckets.map(item => item.state);
+        const stateValues = stateBuckets.map(item => item.count);
+
+        renderChart(
+          "stateChart",
+          "bar",
+          "State-level Regional Discussion Distribution",
+          stateLabels,
+          stateValues,
+          "State mentions",
+          {
+            indexAxis: "x",
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: formatNumber
+                }
+              }
+            }
+          }
+        );
+      } catch (error) {
+        showError("cityChart", error.message);
+        showError("stateChart", error.message);
+      }
+    }
+
+    // use logarithmic scale because official source row counts vary by orders of magnitude
+    async function loadOfficialOverview() {
+      const endpoint = "/api/official/overview";
+
+      try {
+        const data = await fetchAPI(endpoint);
+        const buckets = (data.source_groups || [])
+          .filter(item => getValue(item) > 0)
+          .slice(0, 12);
+
+        const labels = buckets.map(getLabel);
+        const values = buckets.map(getValue);
+
+        renderChart(
+          "officialChart",
+          "bar",
+          "Official Housing Evidence Source Coverage",
+          labels,
+          values,
+          "Official records",
+          {
+            indexAxis: "x",
+            scales: {
+              y: {
+                type: "logarithmic",
+                min: 10,
+                ticks: {
+                  callback: formatNumber
+                },
+                title: {
+                  display: true,
+                  text: "Log scale: indexed official rows"
+                }
+              }
+            }
+          }
+        );
+      } catch (error) {
+        showError("officialChart", error.message);
+      }
+    }
+
+    // render backend-generated word cloud with frontend stopword filtering.
+    // Approach: blacklist (not whitelist). Anything not on the stopword list and
+    // longer than 2 chars survives — keeps the cloud dense while dropping
+    // function words, conversational filler, and the news entities the backend
+    // keeps surfacing (trump, victoria, sydney, afl, nrl, ...).
+    const WORD_CLOUD_STOPWORDS = new Set([
+      // Articles, prepositions, conjunctions
+      "the","a","an","and","or","but","if","else","when","while","whilst",
+      "where","why","how","at","by","for","with","about","against","between",
+      "into","through","during","before","after","above","below","to","from",
+      "up","down","in","on","off","over","under","again","further","once",
+      "here","there","of","as","than","also","like","just","very","too",
+      "quite","really","much","more","most","less","least","other","others",
+      "another","such","some","any","no","nor","not","only","own","same","so",
+      "then","yet","still","ever","never","always","often","sometimes","usually",
+      "maybe","perhaps","probably","possibly","since","ago","until","till",
+      "unless","whether","because","although","though",
+
+      // Pronouns and aux verbs
+      "i","me","my","mine","myself","we","us","our","ours","ourselves",
+      "you","your","yours","yourself","yourselves",
+      "he","him","his","himself","she","her","hers","herself",
+      "it","its","itself","they","them","their","theirs","themselves",
+      "what","whats","which","who","whom","whose","this","that","these","those",
+      "am","is","are","was","were","be","been","being",
+      "have","has","had","having","do","does","did","doing","done",
+      "will","would","should","could","ought","may","might","must","shall","can",
+      "im","ive","id","ill","youre","youve","youd","youll","hes","shes",
+      "weve","wed","theyre","theyve","theyd","theyll",
+      "isnt","arent","wasnt","werent","hasnt","havent","hadnt","doesnt",
+      "dont","didnt","wont","wouldnt","cant","cannot","couldnt","shouldnt","mustnt",
+      "lets","thats","whos","heres","theres","whens","wheres","whys","hows",
+      "i'm","you're","they're","we're","that's","won't","can't","don't","didn't",
+
+      // Conversational filler
+      "yeah","yep","yes","nah","nope","oh","ah","uh","um","hmm","huh","wow",
+      "ok","okay","hey","hi","hello","please","thanks","thank","sorry",
+      "actually","basically","literally","honestly","seriously","obviously",
+      "apparently","gonna","wanna","gotta","kinda","sorta","dunno","yup",
+
+      // Vague modifiers / nouns
+      "thing","things","stuff","way","ways","part","parts","point","points",
+      "case","cases","fact","facts","kind","kinds","sort","sorts","side","sides",
+      "number","numbers","amount","amounts","level","levels","range","ranges",
+      "group","groups","type","types","piece","pieces","section","sections",
+      "area","areas","people","person","everyone","everybody","someone","somebody",
+      "anyone","anybody","nobody","noone",
+      "today","tomorrow","yesterday","tonight","day","days","week","weeks",
+      "month","months","year","years","time","times","moment","moments",
+      "minute","minutes","hour","hours","morning","afternoon","evening","night",
+      "last","next","first","second","third","new","old","good","bad","great",
+      "wrong","right","big","small","long","short","high","low","best","better",
+      "worst","worse","little","large","tiny","huge","real","true","false",
+      "fine","nice","cool","fair","easy","hard","simple","clear","important",
+      "sure","certain","general","specific","main","major","minor","actual",
+      "whole","entire","total","full","complete","done","ready","busy","free",
+      "early","late","quick","slow","fast","strong","weak",
+
+      // Common non-domain verbs
+      "get","gets","got","gotten","getting",
+      "go","goes","going","gone","went",
+      "come","comes","came","coming",
+      "see","sees","saw","seen","seeing",
+      "look","looks","looked","looking",
+      "know","knows","knew","known","knowing",
+      "think","thinks","thought","thinking",
+      "want","wants","wanted","wanting",
+      "need","needs","needed","needing",
+      "make","makes","made","making",
+      "take","takes","took","taken","taking",
+      "find","finds","found","finding",
+      "say","says","said","saying",
+      "tell","tells","told","telling",
+      "ask","asks","asked","asking",
+      "feel","feels","felt","feeling",
+      "use","uses","used","using",
+      "work","works","worked","working",
+      "try","tries","tried","trying",
+      "help","helps","helped","helping",
+      "show","shows","showed","shown","showing",
+      "seem","seems","seemed","seeming",
+      "play","plays","played","playing",
+      "read","reads","reading",
+      "write","writes","wrote","written","writing",
+      "live","lives","lived","living",
+      "love","loves","loved","loving","hate","hated","hates","hating",
+      "keep","keeps","kept","keeping",
+      "let","lets","letting",
+      "leave","leaves","left","leaving",
+      "stay","stays","stayed","staying",
+      "start","starts","started","starting",
+      "stop","stops","stopped","stopping",
+      "end","ends","ended","ending",
+      "open","opens","opened","opening",
+      "close","closes","closed","closing",
+      "change","changes","changed","changing",
+      "run","runs","ran","running",
+      "walk","walks","walked","walking",
+      "put","puts","putting",
+      "give","gives","gave","given","giving",
+      "set","setting","sit","sits","sat","sitting",
+      "stand","stands","stood","standing",
+      "hold","holds","held","holding",
+      "bring","brings","brought","bringing",
+      "happen","happens","happened","happening",
+      "become","becomes","became","becoming",
+      "include","includes","included","including",
+      "remember","remembers","remembered","remembering",
+      "talk","talks","talked","talking",
+      "listen","listens","listened","listening",
+      "watch","watches","watched","watching",
+
+      // Generic dataset / category labels
+      "general","unknown","none","null","misc","various",
+      "post","posts","comment","comments","reply","replies","thread","threads",
+      "user","users","account","accounts","page","pages","video","videos",
+      "channel","channels","content","topic","topics","subtopic","subtopics",
+      "keyword","keywords","query","queries","tag","tags","label","labels",
+      "title","caption","description","summary","article","articles",
+      "blog","blogs","entry","entries","item","items","record","records",
+      "source","sources","report","reports","reporter","reporters",
+
+      // News-entity / off-topic noise (Australian + global)
+      "trump","biden","obama","clinton","putin","xi","modi","macron","albanese",
+      "dutton","morrison",
+      "afl","nrl","aleague","a-league","league","leagues",
+      "game","games","season","seasons","player","players","team","teams",
+      "match","matches","win","wins","won","lost","loss","losses","draw","draws",
+      "court","supreme","premier","budget","government","govt","cabinet",
+      "parliament","minister","ministry","senate","congress","election",
+      "elections","vote","votes","voting","voted","ballot","poll","polls",
+      "campaign","campaigns",
+      "media","social","news","story","stories",
+      "victoria","sydney","melbourne","brisbane","perth","adelaide","hobart",
+      "canberra","darwin","tasmania","queensland","wales","territory",
+      "ipswich","logan","newcastle","wollongong","geelong","cairns",
+      "europe","european","asia","asian","america","american","china","chinese",
+      "russia","russian","ukraine","ukrainian","israel","palestine",
+      "country","countries","city","cities","world","global","national","federal",
+      "aussie","aussies","aud","usd","gbp","eur","yen","dollar","dollars",
+      "bsky","reddit","twitter","facebook","instagram","tiktok","youtube",
+      "snapchat","linkedin","whatsapp","telegram","org","com","net","www",
+      "http","https","gov","edu",
+
+      // Tokenisation artefacts and visible noise from observed clouds
+      "europesay","sydneysay","victoriasay","trumpsay",
+      "something","anything","everything","nothing",
+      "even","odd","since","while","whilst","until","till","unless","whether",
+      "age","act","bill","word","words","name","names","power","powers",
+      "life","lives","back","front","top","bottom","center","centre","middle",
+      "white","black","red","blue","green","yellow","brown","grey","gray","pink",
+
+      // Pure numerals as words
+      "one","two","three","four","five","six","seven","eight","nine","ten",
+      "fourth","fifth","sixth","seventh","eighth","ninth","tenth",
+      "hundred","thousand","million","billion","now"
+    ]);
+
+    function isMeaningfulWord(raw) {
+      if (raw == null) return false;
+      const t = String(raw).toLowerCase().trim();
+      if (!t) return false;
+      if (t.length < 3) return false;                  // require at least 3 chars
+      if (/^\d+$/.test(t)) return false;               // drop pure numbers
+      if (/^[^a-z]/.test(t)) return false;             // must start with a letter
+      if (WORD_CLOUD_STOPWORDS.has(t)) return false;   // drop stopwords / noise
+      return true;
+    }
+
+    async function loadWordCloud() {
+      const endpoint = "/api/analysis/housing/word-cloud?source_size=5000&word_size=200";
+
+      try {
+        const data = await fetchAPI(endpoint);
+        const rawWords = Array.isArray(data.words) ? data.words : [];
+
+        // filter stopwords / noise before rendering, then keep top 80
+        const words = rawWords
+          .filter(item => item && isMeaningfulWord(item.text))
+          .sort((a, b) => Number(b.value || 0) - Number(a.value || 0))
+          .slice(0, 80);
+
+        console.log("[wordcloud]", words.length, "of", rawWords.length, "words after filter");
+
+        const canvas = document.getElementById("wordCloudCanvas");
+
+        if (!canvas) {
+          console.error("Missing wordCloudCanvas");
+          return;
+        }
+
+        const parent = canvas.parentElement;
+        const width = parent.clientWidth || 1000;
+        const height = 520;
+
+        canvas.width = width;
+        canvas.height = height;
+
+        if (!words.length) {
+          showError("wordCloudCanvas", "No word cloud terms returned after filtering.");
+          return;
+        }
+
+        const maxValue = Math.max(...words.map(item => item.value || 0));
+
+        WordCloud(canvas, {
+          list: words.map(item => [item.text, item.value]),
+          gridSize: Math.round(12 * width / 1000),
+          weightFactor: function(size) {
+            return Math.max(14, Math.round(size / maxValue * 72));
+          },
+          minSize: 10,
+          rotateRatio: 0.18,
+          rotationSteps: 2,
+          backgroundColor: "#ffffff",
+          color: function() {
+            return "#087a6a";
+          },
+          fontFamily: "Arial, sans-serif",
+          drawOutOfBound: false,
+          shrinkToFit: true
+        });
+      } catch (error) {
+        showError("wordCloudCanvas", error.message);
+      }
+    }
+
+  </script>
+
+</body>
+</html>

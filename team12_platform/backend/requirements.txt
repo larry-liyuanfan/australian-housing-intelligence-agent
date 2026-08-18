@@ -1,0 +1,24 @@
+# Canonical Python dependencies for Team 12.
+# Covers the Flask API, Elasticsearch ingestion/query helpers, normalisation
+# scripts, smoke tests, and the final Jupyter Notebook frontend.
+
+# Backend API
+Flask>=3.0,<4
+flask-cors>=4.0,<7
+requests>=2.31,<3
+
+# Elasticsearch storage and ingestion
+elasticsearch>=8.13,<9
+python-dateutil>=2.8,<3
+
+# Data processing and analysis
+numpy>=1.24,<3
+pandas>=2.0,<3
+textblob>=0.18,<1
+scikit-learn>=1.4,<2
+
+# Notebook frontend and visualisation
+ipython>=8,<9
+ipywidgets>=8,<9
+jupyter>=1.0,<2
+matplotlib>=3.8,<4

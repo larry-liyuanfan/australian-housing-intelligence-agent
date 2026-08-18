@@ -1,0 +1,68 @@
+{
+  "settings": {
+    "index": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    },
+    "analysis": {
+      "analyzer": {
+        "official_text_analyzer": {
+          "type": "standard",
+          "stopwords": "_english_"
+        }
+      }
+    }
+  },
+  "mappings": {
+    "dynamic": false,
+    "properties": {
+      "doc_id": {
+        "type": "keyword"
+      },
+      "source_file": {
+        "type": "keyword"
+      },
+      "source_group": {
+        "type": "keyword"
+      },
+      "record_index": {
+        "type": "integer"
+      },
+      "sheet": {
+        "type": "keyword"
+      },
+      "state": {
+        "type": "keyword"
+      },
+      "period": {
+        "type": "keyword"
+      },
+      "row_type": {
+        "type": "keyword"
+      },
+      "row_label": {
+        "type": "text",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          }
+        }
+      },
+      "text": {
+        "type": "text",
+        "analyzer": "official_text_analyzer"
+      },
+      "non_null_count": {
+        "type": "integer"
+      },
+      "numeric_count": {
+        "type": "integer"
+      },
+      "raw_data": {
+        "type": "object",
+        "enabled": false
+      }
+    }
+  }
+}

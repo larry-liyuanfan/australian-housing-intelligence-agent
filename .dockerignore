@@ -1,0 +1,14 @@
+.git
+.github
+.venv
+__pycache__
+.pytest_cache
+.coverage
+.env
+artifacts
+data
+eval
+tests
+*.log
+*.zip
+*.pdf

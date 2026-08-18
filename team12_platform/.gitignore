@@ -1,0 +1,39 @@
+# macOS and local editor files
+.DS_Store
+**/.DS_Store
+
+# Python cache
+__pycache__/
+*.pyc
+backend/**/__pycache__/
+backend/**/*.pyc
+
+# Large data (not tracked in git)
+data/
+frontend/figures/*.png
+
+# Local environments and secrets
+.venv/
+.env
+*.env
+*.pem
+*.key
+*openrc*.sh
+config.*.yaml
+kubeconfig*
+
+# Local raw/generated outputs
+backend/harvesting/data/raw/
+backend/harvesting/data/normalised/
+backend/harvest/
+backend/data/*.jsonl
+*.log
+
+# Large local data dumps should not be added casually.
+# Existing tracked submission data remains in Git; document any new data before adding it.
+data/local/
+data/raw/
+data/tmp/
+*.pyc
+*.zip
+backend/deployment/fission/functions/*.zip

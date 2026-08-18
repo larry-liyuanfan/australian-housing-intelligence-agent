@@ -1,0 +1,24 @@
+# COMP90024 Team 12
+# Public attribution: COMP90024 Team 12; member identities removed from this portfolio copy.
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: housing-backend-api-hpa
+  namespace: comp90024
+spec:
+  # Scale the Flask API pods, not Elasticsearch or Fission resources.
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: housing-backend
+  minReplicas: 2
+  maxReplicas: 5
+  metrics:
+    # CPU is the simplest stable autoscaling signal for dashboard API requests.
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

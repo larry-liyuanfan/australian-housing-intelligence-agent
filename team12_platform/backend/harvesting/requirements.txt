@@ -1,0 +1,5 @@
+# Harvesting utilities currently use Python standard-library modules only.
+# Recommended runtime: Python 3.10+
+#
+# The downstream analytics and Elasticsearch ingestion components have their
+# own dependencies under backend/requirements.txt.

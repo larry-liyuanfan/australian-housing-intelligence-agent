@@ -1,0 +1,21 @@
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0,
+    "analysis": {"analyzer": {"housing_english": {"type": "standard", "stopwords": "_english_"}}}
+  },
+  "mappings": {
+    "dynamic": false,
+    "properties": {
+      "doc_id": {"type": "keyword"},
+      "platform": {"type": "keyword"},
+      "title": {"type": "text", "analyzer": "housing_english"},
+      "text": {"type": "text", "analyzer": "housing_english"},
+      "created_at": {"type": "date"},
+      "city_context": {"type": "keyword"},
+      "topic": {"type": "keyword"},
+      "sentiment": {"type": "float"},
+      "embedding": {"type": "dense_vector", "dims": 1024, "index": true, "similarity": "cosine"}
+    }
+  }
+}

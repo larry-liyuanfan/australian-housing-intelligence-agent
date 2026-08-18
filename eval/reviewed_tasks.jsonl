@@ -1,0 +1,15 @@
+{"task_id":"direct-001","reviewed":true,"expected_tools":["search_discussion","search_official_evidence"],"note":"Requires both evidence types; wording does not imply causality."}
+{"task_id":"direct-002","reviewed":true,"expected_tools":["search_discussion","search_official_evidence"],"note":"Region and topic are explicit."}
+{"task_id":"direct-003","reviewed":true,"expected_tools":["search_discussion","search_official_evidence"],"note":"Supply topic should retain corpus labels."}
+{"task_id":"direct-004","reviewed":true,"expected_tools":["search_discussion","search_official_evidence"],"note":"First-home buyer topic exercises lexical variation."}
+{"task_id":"direct-005","reviewed":true,"expected_tools":["search_discussion","search_official_evidence"],"note":"Tenancy topic has a matching discussion and official fixture."}
+{"task_id":"multihop-001","reviewed":true,"expected_tools":["compare_region_period"],"note":"Two explicit regions require a bounded comparison tool."}
+{"task_id":"multihop-002","reviewed":true,"expected_tools":["compare_region_period"],"note":"Comparison must not turn hit counts into prevalence."}
+{"task_id":"multihop-003","reviewed":true,"expected_tools":["compare_region_period"],"note":"Region aliases should be canonicalized."}
+{"task_id":"multihop-004","reviewed":true,"expected_tools":["compare_region_period"],"note":"Tool must retain discussion/official evidence labels."}
+{"task_id":"normalise-001","reviewed":true,"expected_tools":["search_discussion","search_official_evidence"],"note":"Melbourne should canonicalize to VIC."}
+{"task_id":"normalise-002","reviewed":true,"expected_tools":["search_discussion","search_official_evidence"],"note":"Sydney should canonicalize to NSW."}
+{"task_id":"clarify-001","reviewed":true,"expected_status":"clarification_required","note":"No topic, region or time window is supplied."}
+{"task_id":"clarify-002","reviewed":true,"expected_status":"clarification_required","note":"Agent should not guess the referent."}
+{"task_id":"fault-001","reviewed":true,"expected_status":"completed","note":"One transient error should be retried inside the call budget."}
+{"task_id":"fault-002","reviewed":true,"expected_status":"completed","note":"An empty filtered result should trigger one controlled broadening."}

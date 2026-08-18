@@ -1,0 +1,15 @@
+{
+  "settings": {"number_of_shards": 1, "number_of_replicas": 0},
+  "mappings": {
+    "dynamic": false,
+    "properties": {
+      "doc_id": {"type": "keyword"},
+      "source_group": {"type": "keyword"},
+      "state": {"type": "keyword"},
+      "period": {"type": "date", "format": "strict_date_optional_time||yyyy-MM||yyyy"},
+      "row_label": {"type": "text"},
+      "text": {"type": "text"},
+      "embedding": {"type": "dense_vector", "dims": 1024, "index": true, "similarity": "cosine"}
+    }
+  }
+}

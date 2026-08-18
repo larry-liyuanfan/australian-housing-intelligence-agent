@@ -1,0 +1,11 @@
+{
+  "created_at": "2026-08-18T05:16:19.056430+00:00",
+  "git_sha": "uncommitted",
+  "git_dirty": true,
+  "python": "3.13.13 (tags/v3.13.13:01104ce, Apr  7 2026, 19:25:48) [MSC v.1944 64 bit (AMD64)]",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "data_version": "deidentified-fixtures-v1",
+  "task_sha256": "f0515c000c41ed785d40d89ea708c24d4aa95dd23e37816b54bdfd945527245c",
+  "provider": "local deterministic",
+  "provider_cost_usd": 0.0
+}

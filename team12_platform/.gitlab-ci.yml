@@ -1,0 +1,139 @@
+# COMP90024 Team 12
+# Public attribution: COMP90024 Team 12; member identities removed from this portfolio copy.
+
+stages:
+  - lint
+  - test
+  - deploy
+
+# Compile every Python file in backend/
+syntax-check:
+  stage: lint
+  image: python:3.12-slim
+  script:
+    - pip install --quiet flask elasticsearch textblob
+    - find backend -name "*.py" -exec python -m py_compile {} +
+    - echo "Syntax check passed"
+
+# Run 8 unit tests: sentiment + normalisation
+test-sentiment:
+  stage: test
+  image: python:3.12-slim
+  script:
+    - pip install --quiet textblob
+    - |
+      python3 -c "
+      import sys; sys.path.insert(0, '.')
+      from backend.analytics.sentiment.sentiment import analyse_sentiment
+      from backend.analytics.normalisation.normalise_housing import translate_gdelt_code, safe_doc_id, normalise_date
+      assert analyse_sentiment('rental crisis devastating families')['sentiment_label'] == 'negative'
+      assert analyse_sentiment('homelessness surges evictions skyrocket')['sentiment_label'] == 'negative'
+      assert analyse_sentiment('affordable housing initiative helps buyers')['sentiment_label'] == 'positive'
+      assert analyse_sentiment('')['sentiment_label'] == 'neutral'
+      assert translate_gdelt_code('econ_housing_prices') == 'housing prices'
+      assert translate_gdelt_code('crisislex_c05_need_of_shelters') == 'need for shelter'
+      assert safe_doc_id('bluesky', 'at://test/post/123') is not None
+      assert normalise_date('2026-01-01T00:00:00Z') is not None
+      print('All 8 tests PASSED')
+      "
+
+# Optional: API health check (skips if no KUBECONFIG_B64)
+test-api-integration:
+  stage: test
+  image: python:3.12-slim
+  before_script:
+    - |
+      if [ -z "$KUBECONFIG_B64" ]; then
+        echo "SKIP: KUBECONFIG_B64 not configured"
+        exit 0
+      fi
+      echo "$KUBECONFIG_B64" | base64 -d > /tmp/kubeconfig
+      export KUBECONFIG=/tmp/kubeconfig
+  script:
+    - |
+      if [ -n "$KUBECONFIG_B64" ]; then
+        apt-get update -qq
+        apt-get install -y -qq curl
+        curl -s http://127.0.0.1:8080/api/health || echo "API not reachable from CI runner"
+      fi
+  allow_failure: true
+
+# Deploy backend via ConfigMap + rollout restart
+deploy-backend:
+  stage: deploy
+  image: python:3.12-slim
+  when: manual
+  before_script:
+    - echo "$KUBECONFIG_B64" | base64 -d > /tmp/kubeconfig
+    - export KUBECONFIG=/tmp/kubeconfig
+    - pip install --quiet kubernetes
+  script:
+    - tar -czf /tmp/backend.tar.gz backend/
+    - kubectl create configmap backend-code-cm -n comp90024 --from-file=backend.tar.gz=/tmp/backend.tar.gz --dry-run=client -o yaml | kubectl apply -f -
+    - kubectl rollout restart deployment/housing-backend -n comp90024
+    - kubectl rollout status deployment/housing-backend -n comp90024 --timeout=120s
+    - echo "Backend deployed"
+  only:
+    - main
+
+# Shared: install fission CLI
+.install-fission: &install-fission
+  - apt-get update -qq
+  - apt-get install -y -qq curl zip
+  - curl -sLo /tmp/fission https://github.com/fission/fission/releases/download/v1.20.5/fission-v1.20.5-linux-amd64
+  - chmod +x /tmp/fission && mv /tmp/fission /usr/local/bin/fission
+
+# Deploy compute_dashboard (no external deps)
+deploy-fission-dashboard:
+  stage: deploy
+  image: python:3.12-slim
+  when: manual
+  before_script:
+    - echo "$KUBECONFIG_B64" | base64 -d > /tmp/kubeconfig
+    - export KUBECONFIG=/tmp/kubeconfig
+    - *install-fission
+  script:
+    - cd backend/deployment/fission/functions
+    - zip /tmp/dash.zip compute_dashboard.py
+    - fission function update --name compute-dashboard --deployarchive /tmp/dash.zip
+    - echo "compute-dashboard deployed"
+  only:
+    - main
+
+# Deploy bluesky + mastodon harvesters (needs TextBlob via sourcearchive)
+deploy-fission-harvesters:
+  stage: deploy
+  image: python:3.12-slim
+  when: manual
+  before_script:
+    - echo "$KUBECONFIG_B64" | base64 -d > /tmp/kubeconfig
+    - export KUBECONFIG=/tmp/kubeconfig
+    - *install-fission
+  script:
+    - cd backend/deployment/fission/functions
+    - echo "textblob" > requirements.txt
+    - zip /tmp/bluesky.zip bluesky_harvest.py requirements.txt
+    - zip /tmp/mastodon.zip mastodon_harvest.py requirements.txt
+    - fission function update --name bluesky-harvest --sourcearchive /tmp/bluesky.zip --entrypoint "bluesky_harvest.main"
+    - fission function update --name mastodon-harvest --sourcearchive /tmp/mastodon.zip --entrypoint "mastodon_harvest.main"
+    - echo "harvesters deployed"
+  only:
+    - main
+
+# Deploy housing-processor (MQ consumer, needs TextBlob via sourcearchive)
+deploy-fission-processor:
+  stage: deploy
+  image: python:3.12-slim
+  when: manual
+  before_script:
+    - echo "$KUBECONFIG_B64" | base64 -d > /tmp/kubeconfig
+    - export KUBECONFIG=/tmp/kubeconfig
+    - *install-fission
+  script:
+    - cd backend/deployment/fission/functions
+    - echo "textblob" > requirements.txt
+    - zip /tmp/processor.zip housing_processor.py requirements.txt
+    - fission function update --name housing-processor --sourcearchive /tmp/processor.zip --entrypoint "housing_processor.main"
+    - echo "processor deployed"
+  only:
+    - main

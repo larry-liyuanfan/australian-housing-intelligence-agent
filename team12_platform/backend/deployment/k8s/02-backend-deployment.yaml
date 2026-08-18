@@ -1,0 +1,67 @@
+# COMP90024 Team 12
+# Public attribution: COMP90024 Team 12; member identities removed from this portfolio copy.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: housing-backend
+  namespace: comp90024
+  labels:
+    app: housing-backend-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: housing-backend-api
+  template:
+    metadata:
+      labels:
+        app: housing-backend-api
+    spec:
+      initContainers:
+        - name: load-code
+          image: python:3.12-slim
+          command: ["sh", "-c", "cp /code-src/backend.tar.gz /app/ && cd /app && tar xzf backend.tar.gz && echo done"]
+          volumeMounts:
+            - name: code
+              mountPath: /app
+            - name: code-src
+              mountPath: /code-src
+      containers:
+        - name: backend
+          image: python:3.12-slim
+          command: ["sh", "-c"]
+          args:
+            - "pip install --quiet -r /app/backend/requirements.txt && cd /app/backend && exec python3 -u -m api.app"
+          ports:
+            - containerPort: 9090
+          envFrom:
+            - configMapRef:
+                name: housing-backend-config
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 9090
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 9090
+            initialDelaySeconds: 45
+            periodSeconds: 30
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+      volumes:
+        - name: code
+          emptyDir: {}
+        - name: code-src
+          configMap:
+            name: backend-code-cm

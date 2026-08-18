@@ -1,0 +1,8 @@
+# COMP90024 Team 12
+# Public attribution: COMP90024 Team 12; member identities removed from this portfolio copy.
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  # Shared namespace for Team 12 backend API resources.
+  name: comp90024

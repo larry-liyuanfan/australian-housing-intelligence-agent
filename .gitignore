@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+.env
+artifacts/*.tmp
+data/private/
+data/raw/
+*.log
+_team12_import_temp*/

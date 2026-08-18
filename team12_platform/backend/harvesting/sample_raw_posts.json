@@ -1,0 +1,79 @@
+[
+  {
+    "platform": "bluesky",
+    "search_query": "negative gearing",
+    "query_group": "au_only",
+    "harvested_at": "2026-05-03T20:39:51.861620+00:00",
+    "post": {
+      "uri": "at://example/app.bsky.feed.post/example",
+      "cid": "example_cid",
+      "author_handle": "example.bsky.social",
+      "created_at": "2026-05-03T11:16:46.870Z",
+      "text": "Example BlueSky post about negative gearing and rental stress in Australia.",
+      "like_count": 1,
+      "repost_count": 0,
+      "reply_count": 0,
+      "langs": ["en"]
+    }
+  },
+  {
+    "platform": "mastodon",
+    "instance": "aus.social",
+    "search_hashtag": "rentalcrisis",
+    "query_kind": "au_housing",
+    "filter_region": "australia",
+    "harvested_at": "2026-05-03T16:51:01.698209+00:00",
+    "status": {
+      "id": "example_status_id",
+      "uri": "https://example.social/@user/123",
+      "url": "https://example.social/@user/123",
+      "created_at": "2026-03-25T09:01:26.000Z",
+      "content": "<p>Example Mastodon status about rental crisis and housing affordability.</p>",
+      "language": "en",
+      "tags": ["rentalcrisis", "housing"],
+      "account_acct": "example-user",
+      "favourites_count": 0,
+      "reblogs_count": 0,
+      "replies_count": 0
+    }
+  },
+  {
+    "platform": "gdelt_doc",
+    "search_query": "\"rental crisis\" Australia sourcecountry:australia",
+    "harvested_at": "2026-05-04T05:55:26.939923+00:00",
+    "article": {
+      "url": "https://example.com/housing-article",
+      "title": "Example Australian housing article",
+      "seendate": "20260216T080000Z",
+      "domain": "example.com",
+      "language": "English",
+      "sourcecountry": "Australia"
+    },
+    "article_text": "Example article text discussing housing affordability and rental stress in Australia."
+  },
+  {
+    "platform": "youtube",
+    "video": {
+      "id": "example_video_id",
+      "title": "Example YouTube video about Australia's rental crisis",
+      "description": "Example video description about housing insecurity.",
+      "publishedAt": "2024-07-05T08:50:14Z",
+      "channelId": "example_channel_id",
+      "channelTitle": "Example News Channel",
+      "likeCount": "100",
+      "viewCount": "10000",
+      "duration": "PT2M7S"
+    },
+    "comments": [
+      {
+        "id": "example_comment_id",
+        "text": "Example comment about rent increases.",
+        "authorDisplayName": "Example User",
+        "publishedAt": "2024-07-05T09:00:00Z",
+        "likeCount": 2
+      }
+    ],
+    "first_seen_at": "2026-05-08T11:49:19.816131+00:00",
+    "last_updated_at": "2026-05-08T12:47:06.888168+00:00"
+  }
+]
