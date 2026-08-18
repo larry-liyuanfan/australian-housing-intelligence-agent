@@ -182,12 +182,9 @@ def write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
 def run_evaluation(output_dir: Path) -> dict[str, Any]:
     tasks = generate_tasks()
     metrics, rows = evaluate(tasks)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    write_jsonl(output_dir / "tasks.jsonl", [task.model_dump(mode="json") for task in tasks])
-    write_jsonl(output_dir / "predictions.jsonl", rows)
-    write_jsonl(output_dir / "error_cases.jsonl", [row for row in rows if not row["task_success"]])
-    (output_dir / "metrics.json").write_text(json.dumps(metrics, ensure_ascii=False, indent=2), encoding="utf-8")
-    task_hash = hashlib.sha256((output_dir / "tasks.jsonl").read_bytes()).hexdigest()
+    # Capture repository provenance before generated artifacts make the worktree
+    # dirty. This records the code state that produced the run, not the writes
+    # performed by the run itself.
     try:
         git_sha = subprocess.run(["git", "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
     except (subprocess.CalledProcessError, FileNotFoundError):
@@ -196,6 +193,12 @@ def run_evaluation(output_dir: Path) -> dict[str, Any]:
         dirty = bool(subprocess.run(["git", "status", "--porcelain"], check=True, capture_output=True, text=True).stdout.strip())
     except (subprocess.CalledProcessError, FileNotFoundError):
         dirty = True
+    output_dir.mkdir(parents=True, exist_ok=True)
+    write_jsonl(output_dir / "tasks.jsonl", [task.model_dump(mode="json") for task in tasks])
+    write_jsonl(output_dir / "predictions.jsonl", rows)
+    write_jsonl(output_dir / "error_cases.jsonl", [row for row in rows if not row["task_success"]])
+    (output_dir / "metrics.json").write_text(json.dumps(metrics, ensure_ascii=False, indent=2), encoding="utf-8")
+    task_hash = hashlib.sha256((output_dir / "tasks.jsonl").read_bytes()).hexdigest()
     manifest = {
         "created_at": datetime.now(timezone.utc).isoformat(),
         "git_sha": git_sha,

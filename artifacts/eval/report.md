@@ -5,8 +5,8 @@
 | Variant | Task success | Argument validity | Logical tool success | Attempt success | Citation completeness | Failure recovery | P95 ms |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | direct_no_tools | 15.0% | 100.0% | n/a | n/a | 0.0% | 0.0% | 0.010 |
-| single_tool | 40.0% | 100.0% | 88.2% | 88.2% | 100.0% | 0.0% | 2.096 |
-| state_machine | 100.0% | 100.0% | 100.0% | 94.0% | 100.0% | 100.0% | 1.474 |
+| single_tool | 40.0% | 100.0% | 88.2% | 88.2% | 100.0% | 0.0% | 2.968 |
+| state_machine | 100.0% | 100.0% | 100.0% | 94.0% | 100.0% | 100.0% | 9.907 |
 
 ## Interpretation
 
