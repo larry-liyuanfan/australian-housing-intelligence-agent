@@ -4,6 +4,19 @@
 
 `receive -> normalize -> plan -> execute -> verify -> synthesize -> done`
 
+```mermaid
+flowchart LR
+    Q["User query + optional constraints"] --> N["Normalize intent, region and dates"]
+    N --> P["Typed planner"]
+    P --> T["Six registered read-only tools"]
+    T --> R["BM25 + dense surrogate + RRF + rerank"]
+    R --> V["Evidence and citation verifier"]
+    V --> A["Answer + citations + trace ID"]
+    T -->|"timeout / empty / duplicate"| F["Budgeted recovery policy"]
+    F --> T
+    N -->|"underspecified"| C["Clarification response"]
+```
+
 Underspecified input exits through `clarify`. Unexpected failures exit through `failed` without accepting or executing user-provided DSL. Every completed request has a trace ID and data version.
 
 ## Trust boundaries

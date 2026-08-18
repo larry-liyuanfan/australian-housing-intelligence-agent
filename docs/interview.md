@@ -26,3 +26,20 @@ The Team 12 baseline separated Australian online housing discussion from officia
 18. What traces are process-local today, and what would production require?
 19. How do Redis keys include data/index version?
 20. How does Compose avoid affecting the Trip deployment?
+
+## Code evidence map
+
+| Question area | Code or artifact to open |
+|---|---|
+| Tool schemas and argument rejection | `src/housing_agent/schemas.py`, `src/housing_agent/tools.py` |
+| Explicit states, budgets, retries and loop detection | `src/housing_agent/agent.py`, `src/housing_agent/planning.py` |
+| BM25, hash-vector surrogate, RRF and rerank | `src/housing_agent/retrieval.py` |
+| Elasticsearch allowlisted query construction | `src/housing_agent/corpus.py` |
+| Model Studio adapters and deterministic fallback | `src/housing_agent/modelstudio.py` |
+| Citation verification and insufficient-evidence behavior | `src/housing_agent/agent.py` |
+| Trace, metrics and cache versioning | `src/housing_agent/traces.py`, `src/housing_agent/observability.py`, `src/housing_agent/cache.py` |
+| Query/trace/metrics HTTP contracts | `src/housing_agent/api.py` |
+| 100-task ablation definitions and scoring | `src/housing_agent/evaluation.py`, `artifacts/eval/run_manifest.json` |
+| Synthetic/public-data boundary and team attribution | `README.md`, `TEAM_PROJECT_ATTRIBUTION.md`, `docs/evidence.md` |
+| Cloud isolation and resource caps | `compose.yaml`, `.env.example`, `docs/deployment.md` |
+| Executable regression evidence | `tests/`, `.github/workflows/ci.yml` |
