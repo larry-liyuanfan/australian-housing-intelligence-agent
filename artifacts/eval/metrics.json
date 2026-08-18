@@ -38,8 +38,8 @@
       "citation_completeness": 1.0,
       "failure_recovery": 0.0,
       "average_tool_calls": 0.85,
-      "p50_latency_ms": 0.6837999972049147,
-      "p95_latency_ms": 2.9677999555133283,
+      "p50_latency_ms": 0.5102000141050667,
+      "p95_latency_ms": 2.1912999800406396,
       "provider_cost_usd": 0.0
     },
     "state_machine": {
@@ -51,8 +51,8 @@
       "citation_completeness": 1.0,
       "failure_recovery": 1.0,
       "average_tool_calls": 1.66,
-      "p50_latency_ms": 0.9231500152964145,
-      "p95_latency_ms": 9.906699997372925,
+      "p50_latency_ms": 0.8003999828360975,
+      "p95_latency_ms": 1.4407000271603465,
       "provider_cost_usd": 0.0
     }
   }
