@@ -109,7 +109,7 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
     app.state.container = container
 
     @app.get("/healthz")
-    def health() -> dict[str, str]:
+    def health() -> dict[str, str | None]:
         return {
             "status": "ok",
             "backend": container.runtime_backend,
