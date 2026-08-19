@@ -84,10 +84,11 @@ def run_api_benchmark(
 ) -> dict[str, Any]:
     if requests < 1 or concurrency < 1:
         raise ValueError("requests and concurrency must be positive")
-    task_questions = [
+    candidate_questions = [
         task.question for task in generate_tasks()
         if task.fault_mode is None and task.expected_status == "completed"
-    ][:20]
+    ]
+    task_questions = list(dict.fromkeys(candidate_questions))[:20]
 
     passes: dict[str, Any] = {}
     for name in ("cold", "warm"):
