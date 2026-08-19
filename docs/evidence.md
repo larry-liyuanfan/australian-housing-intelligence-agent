@@ -18,7 +18,7 @@ The original material was inspected to confirm mappings, Flask endpoints, Kubern
 | Error/timeout/empty-result recovery | implemented | fault injection tests/eval |
 | 100 deterministic eval tasks | implemented | generator plus output artifacts when run |
 | Elasticsearch/Redis/Prometheus deployment | verified SG fixture infrastructure | Health, separate index counts, commit `52c6c74` |
-| 200-request concurrency-10 run: 470.1 QPS, P95 42.30 ms | verified fixture benchmark | Run artifact SHA-256 `8fc947...c834` | 
+| 200-request concurrency-10 run: 470.1 QPS, P95 42.30 ms | verified fixture benchmark | Run artifact SHA-256 `8fc947...c834` |
 | Redis warm replay reduced HTTP P50 82.8% and tool P50 96.3% | verified fixture benchmark | 13 unique cold/warm queries; same artifact |
 | Model Studio Function Calling | adapter-only until credentialed run | environment-only client/planner |
 | Real task-success/latency/cost | unverified until live run | must add run manifest and raw predictions |

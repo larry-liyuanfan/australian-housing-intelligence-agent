@@ -1,0 +1,87 @@
+{
+  "scope": "black-box online benchmark over deidentified fixture queries; not real-corpus relevance or production SLA",
+  "run_manifest": {
+    "created_at": "2026-08-19T05:20:55.341168+00:00",
+    "source_git_sha": "52c6c74",
+    "python": "3.12.14",
+    "platform": "Linux-5.15.0-186-generic-x86_64-with-glibc2.41",
+    "hostname": "6487867523e7",
+    "health": {
+      "status": "ok",
+      "backend": "elasticsearch",
+      "cache": "redis",
+      "model_planner": "local",
+      "data_version": "elasticsearch-live-with-local-fallback-v1",
+      "backend_fallback_error": null
+    }
+  },
+  "url": "http://127.0.0.1:8080",
+  "query_count_per_cache_pass": 13,
+  "concurrency": 10,
+  "passes": {
+    "cold": {
+      "requests": 13,
+      "transport_successful_requests": 13,
+      "transport_success_rate": 1.0,
+      "agent_nonfailed_requests": 13,
+      "agent_nonfailed_rate": 1.0,
+      "agent_status_counts": {
+        "completed": 13
+      },
+      "wall_seconds": 0.18958763405680656,
+      "throughput_qps": 68.56987305461485,
+      "http_latency_p50_ms": 9.501839987933636,
+      "http_latency_p95_ms": 53.22906491346657,
+      "http_latency_p99_ms": 53.22906491346657,
+      "tool_duration_p50_ms": 7.578,
+      "tool_duration_p95_ms": 51.251,
+      "citation_complete_rate": 1.0,
+      "agent_failures": [],
+      "error_counts": {}
+    },
+    "warm": {
+      "requests": 13,
+      "transport_successful_requests": 13,
+      "transport_success_rate": 1.0,
+      "agent_nonfailed_requests": 13,
+      "agent_nonfailed_rate": 1.0,
+      "agent_status_counts": {
+        "completed": 13
+      },
+      "wall_seconds": 0.023070947965607047,
+      "throughput_qps": 563.4792302154084,
+      "http_latency_p50_ms": 1.637152163311839,
+      "http_latency_p95_ms": 1.9885371439158916,
+      "http_latency_p99_ms": 1.9885371439158916,
+      "tool_duration_p50_ms": 0.281,
+      "tool_duration_p95_ms": 0.311,
+      "citation_complete_rate": 1.0,
+      "agent_failures": [],
+      "error_counts": {}
+    }
+  },
+  "cache_effect": {
+    "http_p50_latency_reduction": 0.8277015646031869,
+    "tool_p50_duration_reduction": 0.962918975983109
+  },
+  "concurrent": {
+    "requests": 200,
+    "transport_successful_requests": 200,
+    "transport_success_rate": 1.0,
+    "agent_nonfailed_requests": 200,
+    "agent_nonfailed_rate": 1.0,
+    "agent_status_counts": {
+      "completed": 200
+    },
+    "wall_seconds": 0.4254371819552034,
+    "throughput_qps": 470.10465582921023,
+    "http_latency_p50_ms": 16.950230463407934,
+    "http_latency_p95_ms": 42.300508823245764,
+    "http_latency_p99_ms": 46.06784996576607,
+    "tool_duration_p50_ms": 1.5250000000000001,
+    "tool_duration_p95_ms": 6.776,
+    "citation_complete_rate": 1.0,
+    "agent_failures": [],
+    "error_counts": {}
+  }
+}
