@@ -35,6 +35,12 @@ def main() -> None:
     seed = sub.add_parser("seed-fixture-index", help="seed deidentified fixtures into Elasticsearch")
     seed.add_argument("--mapping-dir", type=Path, default=Path("deploy/elasticsearch"))
     seed.add_argument("--env-file", type=Path, default=Path(".env"))
+    load = sub.add_parser("benchmark-api", help="benchmark a running API with cold/warm and concurrent passes")
+    load.add_argument("--url", default="http://127.0.0.1:8080")
+    load.add_argument("--requests", type=int, default=100)
+    load.add_argument("--concurrency", type=int, default=10)
+    load.add_argument("--timeout-seconds", type=float, default=10.0)
+    load.add_argument("--output", type=Path)
     args = parser.parse_args()
     if args.command == "serve":
         import uvicorn
@@ -46,11 +52,20 @@ def main() -> None:
         _load_env_file(args.env_file)
         from .live_evaluation import run_live_evaluation
         print(json.dumps(run_live_evaluation(args.output, args.tasks), ensure_ascii=False, indent=2))
-    else:
+    elif args.command == "seed-fixture-index":
         _load_env_file(args.env_file)
         from .config import Settings
         from .fixture_index import seed_fixture_indices
         print(json.dumps(seed_fixture_indices(Settings.from_env(), args.mapping_dir), ensure_ascii=False, indent=2))
+    else:
+        from .api_benchmark import run_api_benchmark
+        print(json.dumps(run_api_benchmark(
+            args.url,
+            output=args.output,
+            requests=args.requests,
+            concurrency=args.concurrency,
+            timeout_seconds=args.timeout_seconds,
+        ), ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
