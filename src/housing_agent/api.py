@@ -27,6 +27,7 @@ class AppContainer:
     registry: ToolRegistry
     runtime_backend: str
     runtime_cache: str
+    runtime_backend_error: str | None = None
 
 
 def create_container(settings: Settings | None = None) -> AppContainer:
@@ -44,6 +45,7 @@ def create_container(settings: Settings | None = None) -> AppContainer:
         )
     backend = LocalHybridSearchBackend(documents, data_version=DATA_VERSION)
     runtime_backend = "local"
+    runtime_backend_error = None
     if settings.backend == "elasticsearch":
         try:
             from elasticsearch import Elasticsearch
@@ -55,8 +57,9 @@ def create_container(settings: Settings | None = None) -> AppContainer:
                 reranker=ModelStudioReranker(model_client) if model_client else None,
             )
             runtime_backend = "elasticsearch"
-        except (ImportError, Exception):
+        except Exception as exc:
             backend = LocalHybridSearchBackend(documents, data_version=DATA_VERSION)
+            runtime_backend_error = type(exc).__name__
 
     cache = InMemoryTTLCache()
     runtime_cache = "memory"
@@ -92,6 +95,7 @@ def create_container(settings: Settings | None = None) -> AppContainer:
         registry=registry,
         runtime_backend=runtime_backend,
         runtime_cache=runtime_cache,
+        runtime_backend_error=runtime_backend_error,
     )
 
 
@@ -112,6 +116,7 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
             "cache": container.runtime_cache,
             "model_planner": "model_studio" if container.agent.model_planner else "local",
             "data_version": container.registry.backend.data_version,
+            "backend_fallback_error": container.runtime_backend_error,
         }
 
     @app.post("/api/agent/query", response_model=AgentQueryResponse)
