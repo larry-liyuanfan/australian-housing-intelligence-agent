@@ -12,6 +12,10 @@ def client() -> TestClient:
 
 def test_query_trace_and_metrics_endpoints() -> None:
     api = client()
+    health = api.get("/healthz").json()
+    assert health["backend"] == "local"
+    assert health["cache"] == "memory"
+    assert health["model_planner"] == "local"
     response = api.post("/api/agent/query", json={"question": "Show discussion and official evidence for rental stress in Victoria."})
     assert response.status_code == 200
     body = response.json()

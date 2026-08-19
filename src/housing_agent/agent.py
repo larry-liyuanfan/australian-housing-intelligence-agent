@@ -11,7 +11,7 @@ from typing import Any
 
 from .cache import Cache
 from .observability import Metrics
-from .planning import DeterministicPlanner, ModelStudioPlanner, Planner, ProposedToolCall, regions_in_text
+from .planning import DeterministicPlanner, ModelStudioPlanner, Planner, ProposedPlan, ProposedToolCall, regions_in_text
 from .schemas import AgentQueryRequest, AgentQueryResponse, CostRecord, Evidence, ToolCallRecord, ToolResult, TraceRecord
 from .tools import ToolRegistry, ToolValidationError
 from .traces import TraceStore
@@ -44,6 +44,8 @@ class HousingAgent:
         model_planner: ModelStudioPlanner | None = None,
         max_tool_calls: int = 4,
         tool_timeout_seconds: float = 3.0,
+        model_input_usd_per_million: float | None = None,
+        model_output_usd_per_million: float | None = None,
     ) -> None:
         self.registry = registry
         self.traces = traces
@@ -53,11 +55,87 @@ class HousingAgent:
         self.model_planner = model_planner
         self.max_tool_calls = min(4, max(1, max_tool_calls))
         self.tool_timeout_seconds = tool_timeout_seconds
+        self.model_input_usd_per_million = model_input_usd_per_million
+        self.model_output_usd_per_million = model_output_usd_per_million
 
     @staticmethod
     def _signature(call: ProposedToolCall) -> str:
         payload = json.dumps(call.arguments, sort_keys=True, default=str, separators=(",", ":"))
         return hashlib.sha256(f"{call.name}:{payload}".encode()).hexdigest()
+
+    def _plan_cache_key(self, request: AgentQueryRequest) -> str:
+        payload = request.model_dump(mode="json", exclude={"use_model"})
+        payload["data_version"] = self.registry.backend.data_version
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        return "plan:" + hashlib.sha256(encoded.encode()).hexdigest()
+
+    def _plan(self, request: AgentQueryRequest, planner: Planner) -> ProposedPlan:
+        if planner.provider != "model_studio":
+            return planner.plan(request, self.registry)
+        cache_key = self._plan_cache_key(request)
+        cached = self.cache.get(cache_key)
+        if cached is not None:
+            try:
+                calls = []
+                for raw in cached["calls"]:
+                    parsed = self.registry.validate(raw["name"], raw["arguments"])
+                    calls.append(ProposedToolCall(raw["name"], parsed.model_dump(mode="json")))
+                self.metrics.increment("plan_cache_hits_total")
+                return ProposedPlan(
+                    calls=calls,
+                    provider="model_studio",
+                    model_calls=0,
+                    cache_hit=True,
+                    model=cached.get("model"),
+                )
+            except (KeyError, TypeError, ToolValidationError, ValueError):
+                pass
+        self.metrics.increment("plan_cache_misses_total")
+        plan = planner.plan(request, self.registry)
+        if plan.provider == "model_studio" and not plan.fallback_used:
+            self.cache.set(
+                cache_key,
+                {
+                    "calls": [
+                        {"name": call.name, "arguments": json.loads(json.dumps(call.arguments, default=str))}
+                        for call in plan.calls
+                    ],
+                    "model": plan.model,
+                },
+                ttl_seconds=300,
+            )
+        return plan
+
+    def _cost_record(self, plan: ProposedPlan) -> CostRecord:
+        if plan.provider != "model_studio":
+            return CostRecord()
+        if plan.cache_hit:
+            return CostRecord(
+                provider="model_studio",
+                model=plan.model,
+                cache_hit=True,
+                measurement_status="cache_avoided_provider_call",
+                estimated_cost_usd=0.0,
+            )
+        estimated_cost = None
+        measurement_status = "provider_usage_not_priced"
+        if self.model_input_usd_per_million is not None and self.model_output_usd_per_million is not None:
+            estimated_cost = (
+                plan.prompt_tokens * self.model_input_usd_per_million
+                + plan.completion_tokens * self.model_output_usd_per_million
+            ) / 1_000_000
+            measurement_status = "provider_usage_priced"
+        return CostRecord(
+            provider="model_studio",
+            model=plan.model,
+            prompt_tokens=plan.prompt_tokens,
+            completion_tokens=plan.completion_tokens,
+            model_calls=plan.model_calls,
+            planner_latency_ms=round(plan.latency_ms, 3),
+            fallback_used=plan.fallback_used,
+            estimated_cost_usd=estimated_cost,
+            measurement_status=measurement_status,
+        )
 
     @staticmethod
     def _append_state(trace: TraceRecord, state: AgentState) -> None:
@@ -175,11 +253,11 @@ class HousingAgent:
 
             self._append_state(trace, AgentState.PLAN)
             selected_planner: Planner = self.model_planner if request.use_model and self.model_planner else self.planner
-            planned = selected_planner.plan(request, self.registry)
+            plan = self._plan(request, selected_planner)
             budget = min(self.max_tool_calls, request.max_tool_calls)
             unique_calls: list[ProposedToolCall] = []
             signatures = set()
-            for call in planned:
+            for call in plan.calls:
                 signature = self._signature(call)
                 if signature in signatures:
                     continue
@@ -220,13 +298,7 @@ class HousingAgent:
             answer = self._synthesize(request.question, results, evidence)
             self._append_state(trace, AgentState.DONE)
 
-            uses_provider = selected_planner.provider == "model_studio"
-            cost = CostRecord(
-                provider="model_studio" if uses_provider else "local",
-                model_calls=1 if uses_provider else 0,
-                estimated_cost_usd=None if uses_provider else 0.0,
-                measurement_status="provider_usage_not_priced" if uses_provider else "local_no_provider_cost",
-            )
+            cost = self._cost_record(plan)
             trace.status = status
             trace.citation_ids = [item.doc_id for item in evidence]
             trace.cost = cost

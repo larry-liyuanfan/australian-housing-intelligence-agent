@@ -25,6 +25,8 @@ class AppContainer:
     traces: TraceStore
     metrics: Metrics
     registry: ToolRegistry
+    runtime_backend: str
+    runtime_cache: str
 
 
 def create_container(settings: Settings | None = None) -> AppContainer:
@@ -41,22 +43,29 @@ def create_container(settings: Settings | None = None) -> AppContainer:
             rerank_path=settings.rerank_path,
         )
     backend = LocalHybridSearchBackend(documents, data_version=DATA_VERSION)
+    runtime_backend = "local"
     if settings.backend == "elasticsearch":
         try:
             from elasticsearch import Elasticsearch
             client = Elasticsearch(settings.elasticsearch_url, api_key=settings.elasticsearch_api_key) if settings.elasticsearch_api_key else Elasticsearch(settings.elasticsearch_url)
+            client.info()
             backend = ElasticsearchHybridSearchBackend(
                 client, documents, data_version="elasticsearch-live-with-local-fallback-v1",
                 embedder=model_client.embedding if model_client else None,
                 reranker=ModelStudioReranker(model_client) if model_client else None,
             )
+            runtime_backend = "elasticsearch"
         except (ImportError, Exception):
             backend = LocalHybridSearchBackend(documents, data_version=DATA_VERSION)
 
     cache = InMemoryTTLCache()
+    runtime_cache = "memory"
     if settings.cache == "redis":
         try:
-            cache = RedisCache(settings.redis_url)
+            redis_cache = RedisCache(settings.redis_url)
+            redis_cache.client.ping()
+            cache = redis_cache
+            runtime_cache = "redis"
         except RuntimeError:
             cache = InMemoryTTLCache()
 
@@ -72,8 +81,18 @@ def create_container(settings: Settings | None = None) -> AppContainer:
         model_planner=model_planner,
         max_tool_calls=settings.max_tool_calls,
         tool_timeout_seconds=settings.tool_timeout_seconds,
+        model_input_usd_per_million=settings.model_input_usd_per_million,
+        model_output_usd_per_million=settings.model_output_usd_per_million,
     )
-    return AppContainer(settings=settings, agent=agent, traces=traces, metrics=metrics, registry=registry)
+    return AppContainer(
+        settings=settings,
+        agent=agent,
+        traces=traces,
+        metrics=metrics,
+        registry=registry,
+        runtime_backend=runtime_backend,
+        runtime_cache=runtime_cache,
+    )
 
 
 def create_app(container: AppContainer | None = None) -> FastAPI:
@@ -87,7 +106,13 @@ def create_app(container: AppContainer | None = None) -> FastAPI:
 
     @app.get("/healthz")
     def health() -> dict[str, str]:
-        return {"status": "ok", "backend": container.settings.backend, "data_version": container.registry.backend.data_version}
+        return {
+            "status": "ok",
+            "backend": container.runtime_backend,
+            "cache": container.runtime_cache,
+            "model_planner": "model_studio" if container.agent.model_planner else "local",
+            "data_version": container.registry.backend.data_version,
+        }
 
     @app.post("/api/agent/query", response_model=AgentQueryResponse)
     def query(request: AgentQueryRequest) -> AgentQueryResponse:

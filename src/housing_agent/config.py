@@ -18,6 +18,17 @@ def _float(name: str, default: float) -> float:
         return default
 
 
+def _optional_float(name: str) -> float | None:
+    value = os.getenv(name)
+    if not value:
+        return None
+    try:
+        parsed = float(value)
+    except ValueError:
+        return None
+    return parsed if parsed >= 0 else None
+
+
 @dataclass(frozen=True, slots=True)
 class Settings:
     backend: str = "local"
@@ -34,6 +45,8 @@ class Settings:
     embedding_model: str = "text-embedding-v4"
     rerank_model: str = "qwen3-rerank"
     rerank_path: str = "/reranks"
+    model_input_usd_per_million: float | None = None
+    model_output_usd_per_million: float | None = None
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -52,6 +65,8 @@ class Settings:
             embedding_model=os.getenv("MODEL_STUDIO_EMBEDDING_MODEL", "text-embedding-v4"),
             rerank_model=os.getenv("MODEL_STUDIO_RERANK_MODEL", "qwen3-rerank"),
             rerank_path=os.getenv("MODEL_STUDIO_RERANK_PATH", "/reranks"),
+            model_input_usd_per_million=_optional_float("MODEL_STUDIO_INPUT_USD_PER_MILLION"),
+            model_output_usd_per_million=_optional_float("MODEL_STUDIO_OUTPUT_USD_PER_MILLION"),
         )
 
     @property
