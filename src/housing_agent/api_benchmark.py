@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import json
 import math
+import os
+import platform
 import statistics
 import time
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -101,8 +104,21 @@ def run_api_benchmark(
     warm_p50 = passes["warm"]["http_latency_p50_ms"]
     cold_tool = passes["cold"]["tool_duration_p50_ms"]
     warm_tool = passes["warm"]["tool_duration_p50_ms"]
+    try:
+        with urllib.request.urlopen(url.rstrip("/") + "/healthz", timeout=timeout_seconds) as response:
+            health = json.loads(response.read().decode("utf-8"))
+    except Exception as exc:
+        health = {"status": "unavailable", "error": type(exc).__name__}
     result = {
         "scope": "black-box online benchmark over deidentified fixture queries; not real-corpus relevance or production SLA",
+        "run_manifest": {
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "source_git_sha": os.getenv("SOURCE_GIT_SHA", "unknown"),
+            "python": platform.python_version(),
+            "platform": platform.platform(),
+            "hostname": platform.node(),
+            "health": health,
+        },
         "url": url,
         "query_count_per_cache_pass": len(task_questions),
         "concurrency": concurrency,
