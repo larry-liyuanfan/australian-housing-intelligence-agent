@@ -305,7 +305,16 @@ class ElasticsearchHybridSearchBackend(LocalHybridSearchBackend):
         }
 
     def search(self, corpus: str, query: str, **kwargs: Any) -> list[Evidence]:
-        body = self.build_bm25_body(corpus, query, **kwargs)
+        options = {
+            "region": None,
+            "start_date": None,
+            "end_date": None,
+            "top_k": 5,
+            "platform": None,
+            "source_group": None,
+            **kwargs,
+        }
+        body = self.build_bm25_body(corpus, query, **options)
         try:
             response = self.client.search(index=self.DISCUSSION_INDEX if corpus == "discussion" else self.OFFICIAL_INDEX, body=body)
             rankings = [response.get("hits", {}).get("hits", [])]
@@ -318,8 +327,8 @@ class ElasticsearchHybridSearchBackend(LocalHybridSearchBackend):
                         "knn": {
                             "field": "embedding",
                             "query_vector": vector,
-                            "k": kwargs["top_k"],
-                            "num_candidates": max(50, kwargs["top_k"] * 4),
+                            "k": options["top_k"],
+                            "num_candidates": max(50, options["top_k"] * 4),
                         },
                     }
                     filters = body["query"]["bool"]["filter"]
@@ -338,7 +347,7 @@ class ElasticsearchHybridSearchBackend(LocalHybridSearchBackend):
                     rrf_scores[key] += 1.0 / (60 + rank)
             hits = [by_id[key] for key in sorted(by_id, key=lambda item: (-rrf_scores[item], item))]
             if not hits:
-                return super().search(corpus, query, **kwargs)
+                return super().search(corpus, query, **options)
             docs: list[HousingDocument] = []
             scores: list[float] = []
             for hit in hits:
@@ -371,4 +380,4 @@ class ElasticsearchHybridSearchBackend(LocalHybridSearchBackend):
             ranked = self.reranker.rerank(query, docs, scores)
             return [Evidence(doc_id=doc.doc_id, corpus=doc.corpus, title=doc.title, snippet=_snippet(doc.text), source=doc.source, region=doc.region, period=doc.period, url=doc.url, score=round(score, 8), rank=rank) for rank, (doc, score) in enumerate(ranked, start=1)]
         except Exception:
-            return super().search(corpus, query, **kwargs)
+            return super().search(corpus, query, **options)
