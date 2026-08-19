@@ -11,3 +11,5 @@ def test_benchmark_summary_separates_throughput_and_latency() -> None:
     assert summary["http_latency_p50_ms"] == 15.0
     assert summary["http_latency_p95_ms"] == 20.0
     assert summary["citation_complete_rate"] == 1.0
+    assert summary["transport_success_rate"] == 1.0
+    assert summary["agent_nonfailed_rate"] == 1.0

@@ -44,6 +44,8 @@ def _request(url: str, question: str, timeout_seconds: float) -> dict[str, Any]:
     return {
         "status_code": status_code,
         "agent_status": body.get("status"),
+        "question": question,
+        "clarification": body.get("clarification"),
         "latency_ms": latency_ms,
         "citation_count": len(body.get("citations") or []),
         "tool_duration_ms": sum(float(row.get("duration_ms") or 0) for row in body.get("tool_calls") or []),
@@ -54,11 +56,19 @@ def _request(url: str, question: str, timeout_seconds: float) -> dict[str, Any]:
 def _summarize(rows: list[dict[str, Any]], wall_seconds: float) -> dict[str, Any]:
     latencies = [row["latency_ms"] for row in rows]
     tool_latencies = [row["tool_duration_ms"] for row in rows]
-    successes = [row for row in rows if row["status_code"] == 200 and row["agent_status"] != "failed"]
+    transport_successes = [row for row in rows if row["status_code"] == 200]
+    agent_successes = [row for row in transport_successes if row["agent_status"] != "failed"]
+    status_counts = {
+        status: sum(row["agent_status"] == status for row in rows)
+        for status in sorted({row["agent_status"] for row in rows if row["agent_status"]})
+    }
     return {
         "requests": len(rows),
-        "successful_requests": len(successes),
-        "success_rate": len(successes) / len(rows),
+        "transport_successful_requests": len(transport_successes),
+        "transport_success_rate": len(transport_successes) / len(rows),
+        "agent_nonfailed_requests": len(agent_successes),
+        "agent_nonfailed_rate": len(agent_successes) / len(rows),
+        "agent_status_counts": status_counts,
         "wall_seconds": wall_seconds,
         "throughput_qps": len(rows) / wall_seconds,
         "http_latency_p50_ms": statistics.median(latencies),
@@ -66,7 +76,11 @@ def _summarize(rows: list[dict[str, Any]], wall_seconds: float) -> dict[str, Any
         "http_latency_p99_ms": _percentile(latencies, 0.99),
         "tool_duration_p50_ms": statistics.median(tool_latencies),
         "tool_duration_p95_ms": _percentile(tool_latencies, 0.95),
-        "citation_complete_rate": sum(row["citation_count"] > 0 for row in successes) / len(successes) if successes else None,
+        "citation_complete_rate": sum(row["citation_count"] > 0 for row in agent_successes) / len(agent_successes) if agent_successes else None,
+        "agent_failures": [
+            {"question": row["question"], "clarification": row["clarification"]}
+            for row in rows if row["agent_status"] == "failed"
+        ],
         "error_counts": {
             error: sum(row["error"] == error for row in rows)
             for error in sorted({row["error"] for row in rows if row["error"]})
