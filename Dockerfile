@@ -8,6 +8,7 @@ RUN useradd --create-home --uid 10001 appuser
 WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY src ./src
+COPY deploy/elasticsearch ./deploy/elasticsearch
 RUN pip install --no-cache-dir ".[elasticsearch,redis]"
 
 USER appuser

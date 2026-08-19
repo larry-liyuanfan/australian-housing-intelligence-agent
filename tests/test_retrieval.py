@@ -28,3 +28,16 @@ def test_elasticsearch_query_is_generated_from_allowlisted_fields() -> None:
     assert "city_context" in serialized
     assert "script" not in serialized
     assert "delete" not in serialized
+
+
+def test_elasticsearch_adapter_supplies_optional_filter_defaults() -> None:
+    class EmptyClient:
+        def search(self, **kwargs):
+            return {"hits": {"hits": []}}
+
+    backend = ElasticsearchHybridSearchBackend(
+        EmptyClient(), fixture_documents(), data_version="fixture-es",
+    )
+    hits = backend.search("discussion", "rental stress", region=AustralianRegion.VIC, top_k=2)
+    assert hits
+    assert all(hit.corpus == "discussion" for hit in hits)

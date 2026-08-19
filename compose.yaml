@@ -14,6 +14,7 @@ services:
       MODEL_STUDIO_CHAT_MODEL: ${MODEL_STUDIO_CHAT_MODEL:-qwen-plus}
       MODEL_STUDIO_EMBEDDING_MODEL: ${MODEL_STUDIO_EMBEDDING_MODEL:-text-embedding-v4}
       MODEL_STUDIO_RERANK_MODEL: ${MODEL_STUDIO_RERANK_MODEL:-qwen3-rerank}
+      SOURCE_GIT_SHA: ${SOURCE_GIT_SHA:-unknown}
     ports:
       - "127.0.0.1:${HOUSING_API_PORT:-8090}:8080"
     depends_on:

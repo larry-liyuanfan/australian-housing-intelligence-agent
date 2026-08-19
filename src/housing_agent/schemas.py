@@ -133,11 +133,20 @@ class ToolCallRecord(StrictModel):
 
 class CostRecord(StrictModel):
     provider: Literal["local", "model_studio"] = "local"
+    model: str | None = None
     prompt_tokens: int = 0
     completion_tokens: int = 0
     model_calls: int = 0
+    planner_latency_ms: float = 0.0
+    fallback_used: bool = False
+    cache_hit: bool = False
     estimated_cost_usd: float | None = 0.0
-    measurement_status: Literal["local_no_provider_cost", "provider_usage_not_priced"] = "local_no_provider_cost"
+    measurement_status: Literal[
+        "local_no_provider_cost",
+        "provider_usage_not_priced",
+        "provider_usage_priced",
+        "cache_avoided_provider_call",
+    ] = "local_no_provider_cost"
 
 
 class AgentQueryRequest(StrictModel):

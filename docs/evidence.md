@@ -17,7 +17,9 @@ The original material was inspected to confirm mappings, Flask endpoints, Kubern
 | Local BM25 + hashed dense + RRF + rerank | implemented | retrieval code/tests |
 | Error/timeout/empty-result recovery | implemented | fault injection tests/eval |
 | 100 deterministic eval tasks | implemented | generator plus output artifacts when run |
-| Elasticsearch/Redis/Prometheus deployment | configuration-only until deployed | Compose and mappings |
+| Elasticsearch/Redis/Prometheus deployment | verified SG fixture infrastructure | Health, separate index counts, commit `52c6c74` |
+| 200-request concurrency-10 run: 470.1 QPS, P95 42.30 ms | verified fixture benchmark | Run artifact SHA-256 `8fc947...c834` |
+| Redis warm replay reduced HTTP P50 82.8% and tool P50 96.3% | verified fixture benchmark | 13 unique cold/warm queries; same artifact |
 | Model Studio Function Calling | adapter-only until credentialed run | environment-only client/planner |
 | Real task-success/latency/cost | unverified until live run | must add run manifest and raw predictions |
 | Original data volumes/cloud scale | team project record only | original course report; not personal extension result |
@@ -36,3 +38,8 @@ Before any resume claim based on a live run, record:
 - failure cases and limitations.
 
 Local synthetic evaluation can prove contract correctness; it cannot validate answer relevance on the original corpus.
+
+The SG benchmark proves deployment, controlled Elasticsearch templates, Redis
+cache behavior and bounded online latency only. Its 14 documents are explicit
+deidentified fixtures. The Model Studio runtime variables are empty, so provider
+tool-selection quality, provider token use and API cost remain unverified.

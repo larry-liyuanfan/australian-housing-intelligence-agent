@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from dataclasses import dataclass
 from typing import Any, Protocol
 
@@ -28,9 +29,23 @@ class ProposedToolCall:
     arguments: dict[str, Any]
 
 
+@dataclass(frozen=True, slots=True)
+class ProposedPlan:
+    calls: list[ProposedToolCall]
+    provider: str
+    model_calls: int = 0
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    latency_ms: float = 0.0
+    fallback_used: bool = False
+    cache_hit: bool = False
+    model: str | None = None
+    error_category: str | None = None
+
+
 class Planner(Protocol):
     provider: str
-    def plan(self, request: AgentQueryRequest, registry: ToolRegistry) -> list[ProposedToolCall]: ...
+    def plan(self, request: AgentQueryRequest, registry: ToolRegistry) -> ProposedPlan: ...
 
 
 def regions_in_text(text: str) -> list[AustralianRegion]:
@@ -47,7 +62,7 @@ def regions_in_text(text: str) -> list[AustralianRegion]:
 class DeterministicPlanner:
     provider = "local"
 
-    def plan(self, request: AgentQueryRequest, registry: ToolRegistry) -> list[ProposedToolCall]:
+    def plan(self, request: AgentQueryRequest, registry: ToolRegistry) -> ProposedPlan:
         text = request.question.lower()
         regions = regions_in_text(text)
         region = request.region or (regions[0] if len(regions) == 1 else None)
@@ -75,7 +90,7 @@ class DeterministicPlanner:
             calls.append(ProposedToolCall("search_official_evidence", {**common, "source_group": None}))
         elif calls[0].name == "search_discussion" and len(calls) < request.max_tool_calls:
             calls.append(ProposedToolCall("search_official_evidence", {**common, "source_group": None}))
-        return calls[: request.max_tool_calls]
+        return ProposedPlan(calls=calls[: request.max_tool_calls], provider=self.provider)
 
 
 class ModelStudioPlanner:
@@ -85,11 +100,12 @@ class ModelStudioPlanner:
         self.client = client
         self.fallback = fallback or DeterministicPlanner()
 
-    def plan(self, request: AgentQueryRequest, registry: ToolRegistry) -> list[ProposedToolCall]:
+    def plan(self, request: AgentQueryRequest, registry: ToolRegistry) -> ProposedPlan:
         system = (
             "Select only the supplied housing evidence tools. Never create Elasticsearch DSL. "
             "Use at most four calls. Keep online discussion separate from official evidence."
         )
+        started = time.perf_counter()
         try:
             response = self.client.chat_with_tools(
                 [{"role": "system", "content": system}, {"role": "user", "content": request.question}],
@@ -103,6 +119,37 @@ class ModelStudioPlanner:
                 arguments = json.loads(raw["function"].get("arguments") or "{}")
                 parsed = registry.validate(name, arguments)
                 calls.append(ProposedToolCall(name, parsed.model_dump(mode="json")))
-            return calls or self.fallback.plan(request, registry)
-        except (ModelStudioError, KeyError, IndexError, TypeError, ValueError, ToolValidationError, json.JSONDecodeError):
-            return self.fallback.plan(request, registry)
+            usage = response.get("usage") or {}
+            if calls:
+                return ProposedPlan(
+                    calls=calls,
+                    provider=self.provider,
+                    model_calls=1,
+                    prompt_tokens=int(usage.get("prompt_tokens") or usage.get("input_tokens") or 0),
+                    completion_tokens=int(usage.get("completion_tokens") or usage.get("output_tokens") or 0),
+                    latency_ms=(time.perf_counter() - started) * 1000,
+                    model=getattr(self.client, "chat_model", None),
+                )
+            fallback = self.fallback.plan(request, registry)
+            return ProposedPlan(
+                calls=fallback.calls,
+                provider=self.provider,
+                model_calls=1,
+                prompt_tokens=int(usage.get("prompt_tokens") or usage.get("input_tokens") or 0),
+                completion_tokens=int(usage.get("completion_tokens") or usage.get("output_tokens") or 0),
+                latency_ms=(time.perf_counter() - started) * 1000,
+                fallback_used=True,
+                model=getattr(self.client, "chat_model", None),
+                error_category="empty_tool_calls",
+            )
+        except (ModelStudioError, KeyError, IndexError, TypeError, ValueError, ToolValidationError, json.JSONDecodeError) as exc:
+            fallback = self.fallback.plan(request, registry)
+            return ProposedPlan(
+                calls=fallback.calls,
+                provider=self.provider,
+                model_calls=1,
+                latency_ms=(time.perf_counter() - started) * 1000,
+                fallback_used=True,
+                model=getattr(self.client, "chat_model", None),
+                error_category=type(exc).__name__,
+            )
